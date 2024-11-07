@@ -1,0 +1,42 @@
+import pandas as pd
+import networkx as nx
+import matplotlib.pyplot as plt
+from tqdm import tqdm
+
+# Chargement du fichier CSV avec le séparateur correct
+file_path = 'reseau_en_arbre.csv'  # Remplacez par le chemin réel du fichier
+data = pd.read_csv(file_path, sep=";")
+
+# Sélection d'un échantillon de quelques bâtiments pour simplifier la visualisation
+sample_data = data[data['id_batiment'].isin(data['id_batiment'].unique()[:5])]
+
+# Création d'un graphe pour l'échantillon
+G_sample = nx.Graph()
+
+# Ajout des nœuds et des arêtes pour chaque ligne de l'échantillon avec une barre de progression
+for _, row in tqdm(sample_data.iterrows(), total=sample_data.shape[0], desc="Création du graphe"):
+    building = row['id_batiment']
+    infra = row['infra_id']
+    length = row['longueur']
+    infra_type = row['infra_type']
+
+    # Ajout des nœuds et arêtes dans le graphe d'échantillon
+    G_sample.add_node(building, type='building', color='blue')
+    
+    # Choix de la couleur des infrastructures selon leur type
+    infra_color = 'green' if infra_type == 'infra_intacte' else 'red'
+    G_sample.add_node(infra, type='infrastructure', color=infra_color)
+    
+    G_sample.add_edge(building, infra, weight=length)
+
+# Extraction des couleurs pour chaque nœud
+node_colors = [G_sample.nodes[node]['color'] for node in G_sample.nodes]
+
+# Tracé du graphe d'échantillon
+plt.figure(figsize=(10, 6))
+pos = nx.spring_layout(G_sample, seed=42)  # Disposition pour une visualisation claire
+nx.draw(G_sample, pos, with_labels=True, node_size=700, node_color=node_colors, font_size=10)
+nx.draw_networkx_edge_labels(G_sample, pos, edge_labels={(u, v): f"{d['weight']:.2f}" for u, v, d in G_sample.edges(data=True)})
+
+plt.title("Graphique de réseau avec coloration des nœuds")
+plt.show()
